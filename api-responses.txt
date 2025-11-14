@@ -1,0 +1,32 @@
+GET /tasks
+Response:
+{
+  "success": true,
+  "data": [
+    { "id": 1, "title": "Task 1", "completed": false, "priority": "low", "createdAt": "2025-11-14T10:00:00.000Z" },
+    { "id": 2, "title": "Task 2", "completed": true, "priority": "medium", "createdAt": "2025-11-14T10:00:00.000Z" },
+    { "id": 3, "title": "Task 3", "completed": false, "priority": "high", "createdAt": "2025-11-14T10:00:00.000Z" },
+    { "id": 4, "title": "Task 4", "completed": false, "priority": "medium", "createdAt": "2025-11-14T10:00:00.000Z" },
+    { "id": 5, "title": "Task 5", "completed": true, "priority": "low", "createdAt": "2025-11-14T10:00:00.000Z" }
+  ]
+}
+
+GET /task/1
+Response:
+{
+  "success": true,
+  "data": { "id": 1, "title": "Task 1", "completed": false, "priority": "low", "createdAt": "2025-11-14T10:00:00.000Z" }
+}
+
+GET /task/5
+Response:
+{
+  "success": true,
+  "data": { "id": 5, "title": "Task 5", "completed": true, "priority": "low", "createdAt": "2025-11-14T10:00:00.000Z" }
+}
+
+GET /task/999
+Response:
+{
+  "error": "Task not found"
+}

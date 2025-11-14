@@ -1,15 +1,19 @@
 const express = require('express');
 const router = express.Router();
 
+// GET all tasks
 router.get('/', (req, res) => {
   res.json({ success: true, data: req.app.locals.tasks });
 });
 
+// POST create task
 router.post('/', (req, res) => {
   const { title, priority } = req.body;
+
   if (!title || title.trim() === '') {
     return res.status(400).json({ success: false, error: 'Title is required' });
   }
+
   const validPriorities = ['low', 'medium', 'high'];
   const taskPriority = validPriorities.includes(priority) ? priority : 'low';
 
@@ -23,6 +27,18 @@ router.post('/', (req, res) => {
 
   req.app.locals.tasks.push(newTask);
   res.status(201).json({ success: true, data: newTask });
+});
+
+// NEW: Get a task by ID (1-5)
+router.get('/task/:id', (req, res) => {
+  const taskId = Number(req.params.id);
+  const task = req.app.locals.tasks.find(t => t.id === taskId);
+
+  if (!task) {
+    return res.status(404).json({ error: "Task not found" });
+  }
+
+  res.json({ success: true, data: task });
 });
 
 module.exports = router;
