@@ -1,48 +1,39 @@
 const express = require('express');
 const router = express.Router();
+const db = require('../config/db');
 
-// GET all tasks
-router.get('/', (req, res) => {
-  res.json({ success: true, data: req.app.locals.tasks });
+router.get('/', async (req, res) => {
+  try {
+    let page = parseInt(req.query.page) || 1;
+    let limit = parseInt(req.query.limit) || 10;
+    if (limit > 50) limit = 50;
+    const offset = (page - 1) * limit;
+    const [[{ total }]] = await db.query('SELECT COUNT(*) AS total FROM tasks');
+    const [rows] = await db.query('SELECT * FROM tasks LIMIT ? OFFSET ?', [limit, offset]);
+    const totalPages = Math.ceil(total / limit);
+    res.json({ totalTasks: total, totalPages, currentPage: page, limit, data: rows });
+  } catch (err) {
+    res.status(500).json({ error: "Server Error" });
+  }
 });
 
-// POST create task
-router.post('/', (req, res) => {
-  const { title, priority } = req.body;
-
-  if (!title || title.trim() === '') {
-    return res.status(400).json({ success: false, error: 'Title is required' });
-  }
-
-  const validPriorities = ['low', 'medium', 'high'];
-  const taskPriority = validPriorities.includes(priority) ? priority : 'low';
-
-  const newTask = {
-    id: Date.now(),
-    title: title.trim(),
-    completed: false,
-    priority: taskPriority,
-    createdAt: new Date()
-  };
-
-  req.app.locals.tasks.push(newTask);
-  res.status(201).json({ success: true, data: newTask });
+router.post('/', async (req, res) => {
+  const { title, description } = req.body;
+  const [result] = await db.query('INSERT INTO tasks (title, description) VALUES (?, ?)', [title, description]);
+  res.json({ id: result.insertId, title, description });
 });
 
-// GET task by ID with proper invalid ID handling
-router.get('/task/:id', (req, res) => {
-  const idParam = req.params.id;
+router.put('/:id', async (req, res) => {
+  const { title, description, status } = req.body;
+  const { id } = req.params;
+  await db.query('UPDATE tasks SET title=?, description=?, status=? WHERE id=?', [title, description, status, id]);
+  res.json({ message: 'Updated' });
+});
 
-  if (!/^\d+$/.test(idParam)) { // check if numeric
-    return res.status(400).json({ error: "Invalid ID format" });
-  }
-
-  const taskId = Number(idParam);
-  const task = req.app.locals.tasks.find(t => t.id === taskId);
-
-  if (!task) return res.status(404).json({ error: "Task not found" });
-
-  res.json({ success: true, data: task });
+router.delete('/:id', async (req, res) => {
+  const { id } = req.params;
+  await db.query('DELETE FROM tasks WHERE id=?', [id]);
+  res.json({ message: 'Deleted' });
 });
 
 module.exports = router;
