@@ -7,26 +7,49 @@ router.get('/', async (req, res) => {
     let page = parseInt(req.query.page) || 1;
     let limit = parseInt(req.query.limit) || 10;
     if (limit > 50) limit = 50;
+
     const offset = (page - 1) * limit;
-    const [[{ total }]] = await db.query('SELECT COUNT(*) AS total FROM tasks');
-    const [rows] = await db.query('SELECT * FROM tasks LIMIT ? OFFSET ?', [limit, offset]);
-    const totalPages = Math.ceil(total / limit);
-    res.json({ totalTasks: total, totalPages, currentPage: page, limit, data: rows });
+    const q = req.query.q ? `%${req.query.q}%` : '%';
+
+    const [[{ total }]] = await db.query(
+      'SELECT COUNT(*) AS total FROM tasks WHERE title LIKE ?',
+      [q]
+    );
+
+    const [rows] = await db.query(
+      'SELECT * FROM tasks WHERE title LIKE ? LIMIT ? OFFSET ?',
+      [q, limit, offset]
+    );
+
+    res.json({
+      totalTasks: total,
+      totalPages: Math.ceil(total / limit),
+      currentPage: page,
+      limit,
+      data: rows
+    });
+
   } catch (err) {
-    res.status(500).json({ error: "Server Error" });
+    res.status(500).json({ error: err.message });
   }
 });
 
 router.post('/', async (req, res) => {
   const { title, description } = req.body;
-  const [result] = await db.query('INSERT INTO tasks (title, description) VALUES (?, ?)', [title, description]);
-  res.json({ id: result.insertId, title, description });
+  const [result] = await db.query(
+    'INSERT INTO tasks (title, description, status) VALUES (?, ?, ?)',
+    [title, description, 'pending']
+  );
+  res.json({ id: result.insertId, title, description, status: 'pending' });
 });
 
 router.put('/:id', async (req, res) => {
   const { title, description, status } = req.body;
   const { id } = req.params;
-  await db.query('UPDATE tasks SET title=?, description=?, status=? WHERE id=?', [title, description, status, id]);
+  await db.query(
+    'UPDATE tasks SET title=?, description=?, status=? WHERE id=?',
+    [title, description, status, id]
+  );
   res.json({ message: 'Updated' });
 });
 
